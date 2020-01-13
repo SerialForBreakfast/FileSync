@@ -20,17 +20,16 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
                 print("Connecting: \(peerID.displayName)")
             case .notConnected:
                 print("Not Conntected: \(peerID.displayName)")
+            @unknown default:
+                print("Unknown State Received: \(peerID.displayName)")
         }
     }
-    func session(_ session: MCSession, didReceiveCertificate certificate: [Any]?, fromPeer peerID: MCPeerID, certificateHandler: @escaping (Bool) -> Void) {
-        print(peerID.displayName)
-        
-    }
+
     func session(_ session: MCSession, didReceive data: Data, fromPeer peerID: MCPeerID) {
-        if let image = UIImage(data: data) {
-            DispatchQueue.main.async {[unowned self] in
-                self.images.insert(image, at: 0)
-                self.collectionView.reloadData()
+        DispatchQueue.main.async {
+            if let image = UIImage(data: data) {
+                    self.images.insert(image, at: 0)
+                    self.collectionView.reloadData()
             }
         }
     }
@@ -57,7 +56,7 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
     
     var images = [UIImage]()
     
-    var peerID: MCPeerID!
+    var peerID = MCPeerID(displayName: UIDevice.current.name)
     var mcSession: MCSession!
     var mcAdvertiserAssistant: MCAdvertiserAssistant!
     
@@ -69,10 +68,8 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         
         navigationItem.rightBarButtonItem = UIBarButtonItem(barButtonSystemItem: .camera, target: self, action: #selector(importPictures))
         
-        
-        peerID = MCPeerID(displayName: UIDevice.current.name)
         mcSession = MCSession(peer: peerID, securityIdentity: nil, encryptionPreference: .required)
-        mcSession.delegate = self
+        mcSession?.delegate = self
         
     }
     
@@ -80,20 +77,21 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         let ac = UIAlertController(title: "Connect To Others", message: nil, preferredStyle: .actionSheet)
         ac.addAction(UIAlertAction(title: "Host a Session", style: .default, handler: startHosting))
         ac.addAction(UIAlertAction(title: "Join a Session", style: .default, handler: joinSession))
-        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel, handler: nil))
+        ac.addAction(UIAlertAction(title: "Cancel", style: .cancel))
         present(ac, animated: true)
     }
     
     func startHosting(action: UIAlertAction) {
+//        guard let mcSession = mcSession else { return}
         mcAdvertiserAssistant = MCAdvertiserAssistant(serviceType: "sb-filesync", discoveryInfo: nil, session: mcSession)
-        mcAdvertiserAssistant.start()
+        mcAdvertiserAssistant?.start()
     }
     
     func joinSession(action: UIAlertAction) {
-        
+//        guard let mcSession = mcSession else { return}
         let mcBrowser = MCBrowserViewController(serviceType: "sb-filesync", session: mcSession)
         mcBrowser.delegate = self
-        present(mcBrowser, animated: true, completion: nil)
+        present(mcBrowser, animated: true)
     }
         
         
@@ -120,18 +118,20 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
         dismiss(animated: true)
         images.insert(image, at: 0) // Or use append to add to bottom of collection
         collectionView?.reloadData()
+//        guard let mcSession = mcSession else { return }
         if mcSession.connectedPeers.count > 0 {
+            // 2
             if let imageData = image.pngData() {
+                // 3
                 do {
                     try mcSession.send(imageData, toPeers: mcSession.connectedPeers, with: .reliable)
                 } catch {
-                    let ac = UIAlertController(title: "Send Error", message: error.localizedDescription, preferredStyle: .alert)
+                    let ac = UIAlertController(title: "Send error", message: error.localizedDescription, preferredStyle: .alert)
                     ac.addAction(UIAlertAction(title: "OK", style: .default, handler: nil))
-                    present(ac, animated: true, completion: nil)
+                    present(ac, animated: true)
                 }
             }
         }
-        
     }
     
     func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
