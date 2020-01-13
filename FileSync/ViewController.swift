@@ -10,12 +10,18 @@ import UIKit
 import MultipeerConnectivity
 
 class ViewController: UICollectionViewController, UINavigationControllerDelegate, UIImagePickerControllerDelegate, MCSessionDelegate, MCBrowserViewControllerDelegate {
+    var images = [UIImage]()
     
+    var peerID = MCPeerID(displayName: UIDevice.current.name)
+    var mcSession: MCSession!
+    var mcAdvertiserAssistant: MCAdvertiserAssistant!
     
     func session(_ session: MCSession, peer peerID: MCPeerID, didChange state: MCSessionState) {
         switch state {
             case .connected:
-                print("Conntected: \(peerID.displayName)")
+                print("Connteted: \(peerID.displayName)")
+                
+            images = []
             case .connecting:
                 print("Connecting: \(peerID.displayName)")
             case .notConnected:
@@ -39,7 +45,7 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
     }
     
     func session(_ session: MCSession, didStartReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, with progress: Progress) {
-        
+        print(progress)
     }
     
     func session(_ session: MCSession, didFinishReceivingResourceWithName resourceName: String, fromPeer peerID: MCPeerID, at localURL: URL?, withError error: Error?) {
@@ -53,12 +59,6 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
     func browserViewControllerWasCancelled(_ browserViewController: MCBrowserViewController) {
         dismiss(animated: true, completion: nil)
     }
-    
-    var images = [UIImage]()
-    
-    var peerID = MCPeerID(displayName: UIDevice.current.name)
-    var mcSession: MCSession!
-    var mcAdvertiserAssistant: MCAdvertiserAssistant!
     
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -82,15 +82,20 @@ class ViewController: UICollectionViewController, UINavigationControllerDelegate
     }
     
     func startHosting(action: UIAlertAction) {
+        images = []
 //        guard let mcSession = mcSession else { return}
         mcAdvertiserAssistant = MCAdvertiserAssistant(serviceType: "sb-filesync", discoveryInfo: nil, session: mcSession)
+        title = "FileSync - Host: \(peerID.displayName)"
         mcAdvertiserAssistant?.start()
     }
     
     func joinSession(action: UIAlertAction) {
 //        guard let mcSession = mcSession else { return}
+        images = []
         let mcBrowser = MCBrowserViewController(serviceType: "sb-filesync", session: mcSession)
         mcBrowser.delegate = self
+        
+        title = "FileSync - Joined"
         present(mcBrowser, animated: true)
     }
         
